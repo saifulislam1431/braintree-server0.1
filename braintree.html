@@ -1,0 +1,69 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <script src="https://js.braintreegateway.com/web/dropin/1.33.2/js/dropin.min.js"></script>
+    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/google-payment.min.js"></script>
+</head>
+
+<body style="display:flex;flex-direction: column;">
+    <div id="dropin-container"></div>
+    <button id="submit-button" class="paymentButton"
+        style="padding: 10px 0px; margin-top: 20px; border-radius: 15px; background-color: cadetblue; color: #fff; border-color: cadetblue;">Complete
+        Payment</button>
+    <script>
+        var button = document.querySelector('#submit-button');
+        braintree.dropin.create({
+            authorization: 'sandbox_8h5x6mn9_hw6cx3qntbggh89h', // the tokenization key from Braintree sandbox account
+            container: '#dropin-container',
+            paypal: {
+                flow: 'checkout',
+                amount: '10.00', // Replace with the amount you want to charge
+                currency: 'USD' // Replace with your currency
+            },
+            applePay: {
+                displayName: 'Test Merchant', // Placeholder name for testing
+                paymentRequest: {
+                    total: {
+                        label: 'Test Merchant',
+                        amount: '10.00' // Replace with the amount you want to charge
+                    }
+                    // Additional Apple Pay configuration options can be added here
+                }
+            },
+            googlePay: {
+                googlePayVersion: 2,
+                merchantId: 'merchant-id-placeholder', // Placeholder merchant ID for testing
+                transactionInfo: {
+                    totalPriceStatus: 'FINAL',
+                    totalPrice: '10.00', // Replace with the amount you want to charge
+                    currencyCode: 'USD' // Replace with your currency
+                },
+                cardRequirements: {
+                    billingAddressRequired: true
+                }
+            }
+        }, function (createErr, instance) {
+            if (createErr) {
+                console.error('Create Error', createErr);
+                return;
+            }
+            button.addEventListener('click', function () {
+                button.textContent = "PROCESSING PAYMENT";
+                instance.requestPaymentMethod(function (requestPaymentMethodErr, payload) {
+                    if (requestPaymentMethodErr) {
+                        console.error('Request Payment Method Error', requestPaymentMethodErr);
+                        return;
+                    }
+                    // Send payload to React Native to send to the server
+                    window.ReactNativeWebView.postMessage(payload.nonce);
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
