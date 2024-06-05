@@ -18,54 +18,21 @@ const gateway = new braintree.BraintreeGateway({
     privateKey: process.env.BRAINTREE_PRIVATE_KEY,
 });
 
-app.get('/client_token', (req, res) => {
-    gateway.clientToken.generate({}, (err, response) => {
-        if (err) {
-            res.status(500).send(err);
-        } else {
-            res.send(response.clientToken);
-        }
-    });
-});
-
-app.post('/checkout', (req, res) => {
-    console.log(req.body);
-    const { nonce, amount } = req.body;
-
-    gateway.transaction.sale(
-        {
-            amount: amount,
-            paymentMethodNonce: nonce,
-            options: {
-                submitForSettlement: true,
-            },
-        },
-        (err, result) => {
-            if (err) {
-                res.status(500).send(err);
-            } else if (result.success) {
-                res.send(result);
-            } else {
-                res.status(500).send(result.message);
-            }
-        }
-    );
-});
-
 app.post('/createPaymentTransaction', async (req, res) => {
     const { body } = req;
     console.log(body);
 
     try {
-
-        //create a transaction 
+        //create a transaction
         const result = await gateway.transaction.sale({
             amount: body.amount,
             paymentMethodNonce: body.nonce,
+            deviceData: body.deviceData, // Include device data
             options: {
                 submitForSettlement: true
             }
         });
+        // console.log(result);
 
         res.status(200).json({
             isPaymentSuccessful: result.success,
@@ -75,14 +42,31 @@ app.post('/createPaymentTransaction', async (req, res) => {
     } catch (error) {
         console.log("Error in creating transaction ", error);
         res.status(400).json({
-            isPaymentSuccessful: false, errorText: "Error in creating the payment transaction" + error
+            isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error
         });
-
     }
 });
 
+app.get('/client_token', async (req, res) => {
+    try {
+        const response = await gateway.clientToken.generate({});
+        res.send(response.clientToken);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+
 app.get('/braintree', function (req, res) {
     res.sendFile(path.join(__dirname, 'braintree.html'));
+});
+
+app.get('/paypal', (req, res) => {
+    res.sendFile(path.join(__dirname, 'googlePay.html'));
+});
+
+app.get('/googlePay', (req, res) => {
+    res.sendFile(path.join(__dirname, 'googlePay.html'));
 });
 
 app.get("/", (req, res) => {

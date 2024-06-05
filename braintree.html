@@ -1,65 +1,89 @@
+<!DOCTYPE html>
 <html>
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <script src="https://js.braintreegateway.com/web/dropin/1.33.2/js/dropin.min.js"></script>
-    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
-    <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
-    <script src="https://js.braintreegateway.com/web/3.102.0/js/google-payment.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://js.braintreegateway.com/web/dropin/1.42.0/js/dropin.min.js"></script>
 </head>
 
-<body style="display:flex;flex-direction: column;">
+<body style="display: flex; flex-direction: column;">
     <div id="dropin-container"></div>
     <button id="submit-button" class="paymentButton"
-        style="padding: 10px 0px; margin-top: 20px; border-radius: 15px; background-color: cadetblue; color: #fff; border-color: cadetblue;">Complete
-        Payment</button>
+        style="background-color: indianred; color: white; padding: 10px 0px; border-radius: 10px; border-color: transparent;">Pay</button>
     <script>
         var button = document.querySelector('#submit-button');
+        var clientToken = new URLSearchParams(window.location.search).get('client_token');
+        var amount = new URLSearchParams(window.location.search).get('amount');
+
         braintree.dropin.create({
-            authorization: 'sandbox_8h5x6mn9_hw6cx3qntbggh89h', // the tokenization key from Braintree sandbox account
+            authorization: clientToken,
             container: '#dropin-container',
+            vaultManager: true,
+            card: {
+                cardholderName: {
+                    required: false
+                    // to make cardholder name required
+                    // required: true
+                }
+            },
             paypal: {
                 flow: 'checkout',
-                amount: '10.00', // Replace with the amount you want to charge
-                currency: 'USD' // Replace with your currency
-            },
-            applePay: {
-                displayName: 'Test Merchant', // Placeholder name for testing
-                paymentRequest: {
-                    total: {
-                        label: 'Test Merchant',
-                        amount: '10.00' // Replace with the amount you want to charge
-                    }
-                    // Additional Apple Pay configuration options can be added here
-                }
+                amount: amount,
+                currency: 'USD'
             },
             googlePay: {
                 googlePayVersion: 2,
-                merchantId: 'merchant-id-placeholder', // Placeholder merchant ID for testing
+                merchantId: 'your-merchant-id', // Replace with your actual Google Pay merchant ID
                 transactionInfo: {
                     totalPriceStatus: 'FINAL',
-                    totalPrice: '10.00', // Replace with the amount you want to charge
-                    currencyCode: 'USD' // Replace with your currency
+                    totalPrice: amount,
+                    currencyCode: 'USD'
                 },
-                cardRequirements: {
-                    billingAddressRequired: true
+                allowedPaymentMethods: [{
+                    type: 'CARD',
+                    parameters: {
+                        billingAddressRequired: true,
+                        billingAddressParameters: {
+                            format: 'FULL'
+                        }
+                    }
+                }]
+            },
+            applePay: {
+                displayName: 'Your Merchant Name',
+                paymentRequest: {
+                    total: {
+                        label: 'Your Merchant Name',
+                        amount: '100.00'
+                    },
+                    currencyCode: 'USD',
+                    countryCode: 'US',
+                    requiredBillingContactFields: ['postalAddress', 'email']
                 }
-            }
+            },
+            venmo: {},
+
         }, function (createErr, instance) {
             if (createErr) {
-                console.error('Create Error', createErr);
+                console.error('Create Error:', createErr);
                 return;
             }
             button.addEventListener('click', function () {
-                button.textContent = "PROCESSING PAYMENT";
+                button.textContent = "Processing Payment";
                 instance.requestPaymentMethod(function (requestPaymentMethodErr, payload) {
                     if (requestPaymentMethodErr) {
-                        console.error('Request Payment Method Error', requestPaymentMethodErr);
+                        console.error('Request Payment Method Error:', requestPaymentMethodErr);
                         return;
                     }
-                    // Send payload to React Native to send to the server
-                    window.ReactNativeWebView.postMessage(payload.nonce);
+                    // Collect device data
+                    const deviceData = instance.deviceData;
+
+                    // Send payload and device data to React Native to send to the server
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        nonce: payload.nonce,
+                        deviceData: deviceData
+                    }));
                 });
             });
         });

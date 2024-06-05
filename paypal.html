@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Braintree PayPal Integration</title>
+    <script src="https://www.paypal.com/sdk/js?client-id=sb&vault=true"></script>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/paypal-checkout.min.js"></script>
+    <style>
+        #paypal-button {
+            width: 100%;
+            max-width: 250px;
+            height: 50px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="paypal-button"></div>
+    <script>
+        fetch('/client_token')
+            .then(response => response.text())
+            .then(clientToken => {
+                return braintree.client.create({
+                    authorization: clientToken
+                });
+            })
+            .then(clientInstance => {
+                return braintree.paypalCheckout.create({
+                    client: clientInstance
+                });
+            })
+            .then(paypalCheckoutInstance => {
+                paypal.Buttons({
+                    createBillingAgreement: () => {
+                        return paypalCheckoutInstance.createPayment({
+                            flow: 'vault',
+                            amount: '10.00', // Replace with your amount
+                            currency: 'USD' // Replace with your currency
+                        });
+                    },
+                    onApprove: (data, actions) => {
+                        return paypalCheckoutInstance.tokenizePayment(data)
+                            .then(payload => {
+                                window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+                            });
+                    },
+                    onCancel: data => console.log('PayPal payment cancelled', data),
+                    onError: err => console.error('PayPal error', err)
+                }).render('#paypal-button');
+            })
+            .catch(err => console.error('Braintree error:', err));
+    </script>
+</body>
+
+</html>
