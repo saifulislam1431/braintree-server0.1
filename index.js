@@ -20,7 +20,7 @@ const gateway = new braintree.BraintreeGateway({
 
 app.post('/createPaymentTransaction', async (req, res) => {
     const { body } = req;
-    console.log(body);
+    // console.log(body);
 
     try {
         //create a transaction
@@ -32,11 +32,48 @@ app.post('/createPaymentTransaction', async (req, res) => {
                 submitForSettlement: true
             }
         });
-        // console.log(result);
+        console.log(result);
 
         res.status(200).json({
             isPaymentSuccessful: result.success,
             successText: result.transaction?.processorResponseText || "",
+        });
+
+    } catch (error) {
+        console.log("Error in creating transaction ", error);
+        res.status(400).json({
+            isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error
+        });
+    }
+});
+
+app.post('/createPaymentTransactionByPaypal', async (req, res) => {
+    // const { body } = req;
+    // console.log(body);
+    const saleRequest = {
+        amount: req.body.amount,
+        paymentMethodNonce: req.body.nonce,
+        deviceData: req.body.deviceData,
+        orderId: "01",
+        options: {
+            submitForSettlement: true,
+            paypal: {
+                customField: "PayPal custom field",
+                description: "Test Payment Successful.",
+            },
+        }
+    };
+
+    try {
+        //create a transaction
+        gateway.transaction.sale(saleRequest).then(result => {
+            if (result.success) {
+                console.log("Success! Transaction ID: " + result.transaction.id);
+            } else {
+                console.log("Error:  " + result.message);
+            }
+        }).catch(err => {
+            console.log("Error:  " + err);
         });
 
     } catch (error) {
@@ -62,7 +99,7 @@ app.get('/braintree', function (req, res) {
 });
 
 app.get('/paypal', (req, res) => {
-    res.sendFile(path.join(__dirname, 'googlePay.html'));
+    res.sendFile(path.join(__dirname, 'paypal.html'));
 });
 
 app.get('/googlePay', (req, res) => {

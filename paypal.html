@@ -5,14 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Braintree PayPal Integration</title>
-    <script src="https://www.paypal.com/sdk/js?client-id=sb&vault=true"></script>
+    <script
+        src="https://www.paypal.com/sdk/js?client-id=AVRDlnlR21Dw8C-IHo45L9YBVS_Om65ubMvITP7a6-tV8-8Uxm7yw3AkDWNVZMm5c_GdHUdCkJq6kelm&vault=true"></script>
     <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
     <script src="https://js.braintreegateway.com/web/3.102.0/js/paypal-checkout.min.js"></script>
     <style>
         #paypal-button {
             width: 100%;
-            max-width: 250px;
-            height: 50px;
+            max-width: 95%;
+            height: 70px;
             margin-top: 20px;
         }
     </style>
@@ -21,35 +22,54 @@
 <body>
     <div id="paypal-button"></div>
     <script>
+        const amount = '100'; // Define the amount here or pass it dynamically as needed
+
         fetch('/client_token')
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch client token');
+                }
+                return response.text();
+            })
             .then(clientToken => {
+                console.log('Client Token:', clientToken);
                 return braintree.client.create({
                     authorization: clientToken
                 });
             })
             .then(clientInstance => {
+                console.log('Braintree Client Instance:', clientInstance);
                 return braintree.paypalCheckout.create({
                     client: clientInstance
                 });
             })
             .then(paypalCheckoutInstance => {
+                console.log('PayPal Checkout Instance:', paypalCheckoutInstance);
                 paypal.Buttons({
                     createBillingAgreement: () => {
+                        console.log('Creating Billing Agreement');
                         return paypalCheckoutInstance.createPayment({
                             flow: 'vault',
-                            amount: '10.00', // Replace with your amount
-                            currency: 'USD' // Replace with your currency
+                            amount: amount,
+                            currency: 'USD',
+                            requestBillingAgreement: 'true',
+                            'disable-funding': 'paylater',
                         });
                     },
                     onApprove: (data, actions) => {
+                        console.log('Payment Approved:', data);
                         return paypalCheckoutInstance.tokenizePayment(data)
                             .then(payload => {
+                                console.log('Tokenized Payment Payload:', payload);
                                 window.ReactNativeWebView.postMessage(JSON.stringify(payload));
                             });
                     },
-                    onCancel: data => console.log('PayPal payment cancelled', data),
-                    onError: err => console.error('PayPal error', err)
+                    onCancel: data => {
+                        console.log('PayPal payment cancelled', data);
+                    },
+                    onError: err => {
+                        console.error('PayPal error', err);
+                    }
                 }).render('#paypal-button');
             })
             .catch(err => console.error('Braintree error:', err));

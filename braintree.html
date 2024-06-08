@@ -25,15 +25,27 @@
                     required: false
                     // to make cardholder name required
                     // required: true
+                },
+                overrides: {
+                    styles: {
+                        input: {
+                            'color': 'blue',
+                            'font-size': '18px',
+                            'font-family': 'monospace',
+                            'border-radius': "10px"
+                        },
+                        '.number': {
+                            'font-family': 'monospace'
+                            // Custom web fonts are not supported. Only use system installed fonts.
+                        },
+                        '.invalid': {
+                            'color': 'red'
+                        }
+                    }
                 }
             },
-            paypal: {
-                flow: 'checkout',
-                amount: amount,
-                currency: 'USD'
-            },
             googlePay: {
-                googlePayVersion: 2,
+                googlePayVersion: 1,
                 merchantId: 'your-merchant-id', // Replace with your actual Google Pay merchant ID
                 transactionInfo: {
                     totalPriceStatus: 'FINAL',
@@ -62,7 +74,6 @@
                     requiredBillingContactFields: ['postalAddress', 'email']
                 }
             },
-            venmo: {},
 
         }, function (createErr, instance) {
             if (createErr) {
