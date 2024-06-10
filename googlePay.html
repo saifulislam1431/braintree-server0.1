@@ -47,11 +47,11 @@
             window.console = console;
         })();
 
-        const amount = '100'; // Define the amount here or pass it dynamically as needed
+        const amount = '100';
 
         var button = document.querySelector('#google-pay-button');
         var paymentsClient = new google.payments.api.PaymentsClient({
-            environment: 'TEST' // Change to 'PRODUCTION' for production environment
+            environment: 'TEST'
         });
 
         fetch('/client_token_gpay')
@@ -62,32 +62,32 @@
                 return response.text();
             })
             .then(clientToken => {
-                console.log('Client Token:', clientToken); // Debug log
+                console.log('Client Token:', clientToken);
                 return braintree.client.create({
                     authorization: clientToken
                 });
             })
             .then(clientInstance => {
-                console.log('Braintree Client Instance:', clientInstance); // Debug log
+                console.log('Braintree Client Instance:', clientInstance);
                 return braintree.googlePayment.create({
                     client: clientInstance,
                     googlePayVersion: 2,
-                    googleMerchantId: 'your-google-merchant-id' // Replace with your Google Merchant ID
+                    googleMerchantId: 'your-google-merchant-id'
                 });
             })
             .then(googlePaymentInstance => {
-                console.log('Google Payment Instance:', googlePaymentInstance); // Debug log
+                console.log('Google Payment Instance:', googlePaymentInstance);
                 paymentsClient.isReadyToPay({
                     apiVersion: 2,
                     apiVersionMinor: 0,
                     allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
                 }).then(response => {
-                    console.log('Is Ready To Pay Response:', response); // Debug log
+                    console.log('Is Ready To Pay Response:', response);
                     if (response.result) {
-                        button.style.display = 'block'; // Make sure button is visible
+                        button.style.display = 'block';
                         button.addEventListener('click', event => {
                             event.preventDefault();
-                            console.log('Google Pay button clicked'); // Debug log
+                            console.log('Google Pay button clicked');
 
                             var paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
                                 transactionInfo: {
@@ -105,17 +105,17 @@
                             };
 
                             paymentsClient.loadPaymentData(paymentDataRequest).then(paymentData => {
-                                console.log('Payment Data:', paymentData); // Debug log
+                                console.log('Payment Data:', paymentData);
                                 return googlePaymentInstance.parseResponse(paymentData);
                             }).then(result => {
-                                console.log('Parsed Payment Result:', result); // Debug log
+                                console.log('Parsed Payment Result:', result);
                                 window.ReactNativeWebView.postMessage(JSON.stringify(result));
                             }).catch(err => {
                                 console.error('Google Pay error', err);
                             });
                         });
                     } else {
-                        console.warn('Google Pay is not available.'); // Warn log
+                        console.warn('Google Pay is not available.');
                     }
                 }).catch(err => console.error('isReadyToPay error:', err));
             })
