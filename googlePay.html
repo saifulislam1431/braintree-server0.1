@@ -10,7 +10,7 @@
 
 <body style="display: flex; flex-direction: column;">
     <div id="dropin-container"></div>
-    <button id="submit-button" class="paymentButton"></button>
+    <button id="submit-button" class="paymentButton" style="display: none;"></button>
     <script>
         var button = document.querySelector('#submit-button');
         var clientToken = new URLSearchParams(window.location.search).get('client_token');
