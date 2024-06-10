@@ -109,6 +109,34 @@ app.post('/createPaymentTransactionByGooglePay', async (req, res) => {
     }
 });
 
+app.post('/createPaymentTransactionByApplePay', async (req, res) => {
+    const saleRequest = {
+        amount: req.body.amount,
+        paymentMethodNonce: req.body.nonce,
+        deviceData: req.body.deviceData,
+        orderId: "02", // You can change the orderId as needed
+        options: {
+            submitForSettlement: true,
+        },
+    };
+
+    try {
+        // Create a transaction
+        const result = await gateway.transaction.sale(saleRequest);
+        if (result.success) {
+            console.log("Success! Transaction ID: " + result.transaction.id);
+            res.json({ isPaymentSuccessful: true });
+        } else {
+            console.log("Error: " + result.message);
+            res.status(400).json({ isPaymentSuccessful: false, errorText: result.message });
+        }
+    } catch (error) {
+        console.log("Error in creating transaction ", error);
+        res.status(400).json({ isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error });
+    }
+});
+
+
 
 app.get('/client_token', async (req, res) => {
     try {
@@ -139,6 +167,9 @@ app.get('/paypal', (req, res) => {
 
 app.get('/googlePay', (req, res) => {
     res.sendFile(path.join(__dirname, 'googlePay.html'));
+});
+app.get('/applePay', (req, res) => {
+    res.sendFile(path.join(__dirname, 'applePay.html'));
 });
 
 app.get("/", (req, res) => {

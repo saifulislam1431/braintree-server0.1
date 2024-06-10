@@ -1,125 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braintree Google Pay Integration</title>
-    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
-    <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
-    <script src="https://js.braintreegateway.com/web/3.102.0/js/google-payment.min.js"></script>
-    <style>
-        #google-pay-button {
-            width: 100%;
-            max-width: 95%;
-            height: 70px;
-            margin-top: 20px;
-        }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://js.braintreegateway.com/web/dropin/1.42.0/js/dropin.min.js"></script>
 </head>
 
-<body>
-    <div id="google-pay-button-container">
-        <button id="google-pay-button" style="display: none;">Google Pay</button>
-    </div>
+<body style="display: flex; flex-direction: column;">
+    <div id="dropin-container"></div>
+    <button id="submit-button" class="paymentButton"
+        style="background-color: indianred; color: white; padding: 10px 0px; border-radius: 10px; border-color: transparent;">Pay</button>
     <script>
-        (function () {
-            var console = (function (oldCons) {
-                return {
-                    log: function (text) {
-                        oldCons.log(text);
-                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'log', text: text }));
-                    },
-                    info: function (text) {
-                        oldCons.info(text);
-                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'info', text: text }));
-                    },
-                    warn: function (text) {
-                        oldCons.warn(text);
-                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'warn', text: text }));
-                    },
-                    error: function (text) {
-                        oldCons.error(text);
-                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error', text: text }));
+        var button = document.querySelector('#submit-button');
+        var clientToken = new URLSearchParams(window.location.search).get('client_token');
+        var amount = new URLSearchParams(window.location.search).get('amount');
+
+        braintree.dropin.create({
+            authorization: clientToken,
+            container: '#dropin-container',
+            googlePay: {
+                googlePayVersion: 2,
+                merchantId: 'your-merchant-id', // Replace with your actual Google Pay merchant ID
+                transactionInfo: {
+                    totalPriceStatus: 'FINAL',
+                    totalPrice: amount,
+                    currencyCode: 'USD'
+                },
+                allowedPaymentMethods: [{
+                    type: 'CARD',
+                    parameters: {
+                        billingAddressRequired: true,
+                        billingAddressParameters: {
+                            format: 'FULL'
+                        }
                     }
-                };
-            }(window.console));
-            window.console = console;
-        })();
+                }]
+            },
 
-        const amount = '100';
+        }, function (createErr, instance) {
+            if (createErr) {
+                console.error('Create Error:', createErr);
+                return;
+            }
+            button.addEventListener('click', function () {
+                button.textContent = "Processing Payment";
+                instance.requestPaymentMethod(function (requestPaymentMethodErr, payload) {
+                    if (requestPaymentMethodErr) {
+                        console.error('Request Payment Method Error:', requestPaymentMethodErr);
+                        return;
+                    }
+                    // Collect device data
+                    const deviceData = instance.deviceData;
 
-        var button = document.querySelector('#google-pay-button');
-        var paymentsClient = new google.payments.api.PaymentsClient({
-            environment: 'TEST'
+                    // Send payload and device data to React Native to send to the server
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        nonce: payload.nonce,
+                        deviceData: deviceData
+                    }));
+                });
+            });
         });
-
-        fetch('/client_token_gpay')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch client token');
-                }
-                return response.text();
-            })
-            .then(clientToken => {
-                console.log('Client Token:', clientToken);
-                return braintree.client.create({
-                    authorization: clientToken
-                });
-            })
-            .then(clientInstance => {
-                console.log('Braintree Client Instance:', clientInstance);
-                return braintree.googlePayment.create({
-                    client: clientInstance,
-                    googlePayVersion: 2,
-                    googleMerchantId: 'your-google-merchant-id'
-                });
-            })
-            .then(googlePaymentInstance => {
-                console.log('Google Payment Instance:', googlePaymentInstance);
-                paymentsClient.isReadyToPay({
-                    apiVersion: 2,
-                    apiVersionMinor: 0,
-                    allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
-                }).then(response => {
-                    console.log('Is Ready To Pay Response:', response);
-                    if (response.result) {
-                        button.style.display = 'block';
-                        button.addEventListener('click', event => {
-                            event.preventDefault();
-                            console.log('Google Pay button clicked');
-
-                            var paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
-                                transactionInfo: {
-                                    currencyCode: 'USD',
-                                    totalPriceStatus: 'FINAL',
-                                    totalPrice: amount
-                                }
-                            });
-
-                            var cardPaymentMethod = paymentDataRequest.allowedPaymentMethods[0];
-                            cardPaymentMethod.parameters.billingAddressRequired = true;
-                            cardPaymentMethod.parameters.billingAddressParameters = {
-                                format: 'FULL',
-                                phoneNumberRequired: true
-                            };
-
-                            paymentsClient.loadPaymentData(paymentDataRequest).then(paymentData => {
-                                console.log('Payment Data:', paymentData);
-                                return googlePaymentInstance.parseResponse(paymentData);
-                            }).then(result => {
-                                console.log('Parsed Payment Result:', result);
-                                window.ReactNativeWebView.postMessage(JSON.stringify(result));
-                            }).catch(err => {
-                                console.error('Google Pay error', err);
-                            });
-                        });
-                    } else {
-                        console.warn('Google Pay is not available.');
-                    }
-                }).catch(err => console.error('isReadyToPay error:', err));
-            })
-            .catch(err => console.error('Braintree error:', err));
     </script>
 </body>
 
