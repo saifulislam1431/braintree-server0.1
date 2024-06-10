@@ -19,8 +19,36 @@
 </head>
 
 <body>
-    <div id="google-pay-button"></div>
+    <div id="google-pay-button-container">
+        <button id="google-pay-button">Google Pay</button>
+    </div>
     <script>
+        // Capture console logs and forward them to React Native WebView
+        (function () {
+            var console = (function (oldCons) {
+                return {
+                    log: function (text) {
+                        oldCons.log(text);
+                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'log', text: text }));
+                    },
+                    info: function (text) {
+                        oldCons.info(text);
+                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'info', text: text }));
+                    },
+                    warn: function (text) {
+                        oldCons.warn(text);
+                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'warn', text: text }));
+                    },
+                    error: function (text) {
+                        oldCons.error(text);
+                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error', text: text }));
+                    }
+                };
+            }(window.console));
+
+            window.console = console;
+        })();
+
         const amount = '100'; // Define the amount here or pass it dynamically as needed
 
         var button = document.querySelector('#google-pay-button');
@@ -58,6 +86,7 @@
                 }).then(response => {
                     console.log('Is Ready To Pay Response:', response); // Debug log
                     if (response.result) {
+                        button.style.display = 'block'; // Make sure button is visible
                         button.addEventListener('click', event => {
                             event.preventDefault();
                             console.log('Google Pay button clicked'); // Debug log
@@ -87,6 +116,8 @@
                                 console.error('Google Pay error', err);
                             });
                         });
+                    } else {
+                        console.warn('Google Pay is not available.'); // Warn log
                     }
                 }).catch(err => console.error('isReadyToPay error:', err));
             })
