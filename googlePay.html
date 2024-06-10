@@ -10,8 +10,7 @@
 
 <body style="display: flex; flex-direction: column;">
     <div id="dropin-container"></div>
-    <button id="submit-button" class="paymentButton"
-        style="background-color: indianred; color: white; padding: 10px 0px; border-radius: 10px; border-color: transparent;">Pay</button>
+    <button id="submit-button" class="paymentButton"></button>
     <script>
         var button = document.querySelector('#submit-button');
         var clientToken = new URLSearchParams(window.location.search).get('client_token');
@@ -22,7 +21,7 @@
             container: '#dropin-container',
             card: false,
             googlePay: {
-                googlePayVersion: 2,
+                googlePayVersion: 1,
                 merchantId: 'your-merchant-id', // Replace with your actual Google Pay merchant ID
                 transactionInfo: {
                     totalPriceStatus: 'FINAL',
