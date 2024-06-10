@@ -118,6 +118,15 @@ app.get('/client_token', async (req, res) => {
         res.status(500).send(err);
     }
 });
+app.get('/client_token_gpay', async (req, res) => {
+    try {
+        const response = await gateway.clientToken.generate({});
+        const clientToken = response.clientToken;
+        res.send(clientToken);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
 
 
 app.get('/braintree', function (req, res) {

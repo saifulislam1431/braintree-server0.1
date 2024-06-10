@@ -20,10 +20,9 @@
 
 <body>
     <div id="google-pay-button-container">
-        <button id="google-pay-button">Google Pay</button>
+        <button id="google-pay-button" style="display: none;">Google Pay</button>
     </div>
     <script>
-        // Capture console logs and forward them to React Native WebView
         (function () {
             var console = (function (oldCons) {
                 return {
@@ -45,7 +44,6 @@
                     }
                 };
             }(window.console));
-
             window.console = console;
         })();
 
@@ -56,7 +54,7 @@
             environment: 'TEST' // Change to 'PRODUCTION' for production environment
         });
 
-        fetch('/client_token')
+        fetch('/client_token_gpay')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to fetch client token');
