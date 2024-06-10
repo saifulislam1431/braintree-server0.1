@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://js.braintreegateway.com/web/dropin/1.42.0/js/dropin.min.js"></script>
+    <script src="https://pay.google.com/gp/p/js/pay.js" async defer></script>
 </head>
 
 <body style="display: flex; flex-direction: column;">
@@ -19,8 +20,9 @@
         braintree.dropin.create({
             authorization: clientToken,
             container: '#dropin-container',
+            card: false,
             googlePay: {
-                googlePayVersion: 1,
+                googlePayVersion: 2,
                 merchantId: 'your-merchant-id', // Replace with your actual Google Pay merchant ID
                 transactionInfo: {
                     totalPriceStatus: 'FINAL',
