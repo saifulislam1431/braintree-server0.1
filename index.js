@@ -84,6 +84,32 @@ app.post('/createPaymentTransactionByPaypal', async (req, res) => {
     }
 });
 
+app.post('/createPaymentTransactionByGooglePay', async (req, res) => {
+    const saleRequest = {
+        amount: req.body.amount,
+        paymentMethodNonce: req.body.nonce,
+        deviceData: req.body.deviceData,
+        orderId: "01",
+        options: {
+            submitForSettlement: true,
+        }
+    };
+
+    try {
+        const result = await gateway.transaction.sale(saleRequest);
+        if (result.success) {
+            res.json({ isPaymentSuccessful: true, transactionId: result.transaction.id });
+        } else {
+            res.json({ isPaymentSuccessful: false, errorText: result.message });
+        }
+    } catch (error) {
+        res.status(400).json({
+            isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error
+        });
+    }
+});
+
+
 app.get('/client_token', async (req, res) => {
     try {
         const response = await gateway.clientToken.generate({});
