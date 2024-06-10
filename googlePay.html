@@ -36,11 +36,13 @@
                 return response.text();
             })
             .then(clientToken => {
+                console.log('Client Token:', clientToken); // Debug log
                 return braintree.client.create({
                     authorization: clientToken
                 });
             })
             .then(clientInstance => {
+                console.log('Braintree Client Instance:', clientInstance); // Debug log
                 return braintree.googlePayment.create({
                     client: clientInstance,
                     googlePayVersion: 2,
@@ -48,14 +50,17 @@
                 });
             })
             .then(googlePaymentInstance => {
+                console.log('Google Payment Instance:', googlePaymentInstance); // Debug log
                 paymentsClient.isReadyToPay({
                     apiVersion: 2,
                     apiVersionMinor: 0,
                     allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
                 }).then(response => {
+                    console.log('Is Ready To Pay Response:', response); // Debug log
                     if (response.result) {
                         button.addEventListener('click', event => {
                             event.preventDefault();
+                            console.log('Google Pay button clicked'); // Debug log
 
                             var paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
                                 transactionInfo: {
@@ -73,15 +78,17 @@
                             };
 
                             paymentsClient.loadPaymentData(paymentDataRequest).then(paymentData => {
+                                console.log('Payment Data:', paymentData); // Debug log
                                 return googlePaymentInstance.parseResponse(paymentData);
                             }).then(result => {
+                                console.log('Parsed Payment Result:', result); // Debug log
                                 window.ReactNativeWebView.postMessage(JSON.stringify(result));
                             }).catch(err => {
                                 console.error('Google Pay error', err);
                             });
                         });
                     }
-                });
+                }).catch(err => console.error('isReadyToPay error:', err));
             })
             .catch(err => console.error('Braintree error:', err));
     </script>
