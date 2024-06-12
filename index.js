@@ -3,6 +3,7 @@ const express = require('express');
 const braintree = require('braintree');
 const cors = require('cors');
 const path = require('path');
+const { log } = require('console');
 
 const port = process.env.PORT || 5000;
 
@@ -123,6 +124,7 @@ app.post('/createPaymentTransactionByApplePay', async (req, res) => {
     try {
         // Create a transaction
         const result = await gateway.transaction.sale(saleRequest);
+        console.log(result);
         if (result.success) {
             console.log("Success! Transaction ID: " + result.transaction.id);
             res.json({ isPaymentSuccessful: true });
