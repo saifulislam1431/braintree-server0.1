@@ -110,33 +110,25 @@ app.post('/createPaymentTransactionByGooglePay', async (req, res) => {
     }
 });
 
-app.post('/createPaymentTransactionByApplePay', async (req, res) => {
-    const saleRequest = {
-        amount: req.body.amount,
-        paymentMethodNonce: req.body.nonce,
-        deviceData: req.body.deviceData,
-        orderId: "02", // You can change the orderId as needed
-        options: {
-            submitForSettlement: true,
-        },
-    };
+app.post('/createPaymentTransactionByApplePay', express.json(), (req, res) => {
+    const { amount, nonce, deviceData } = req.body;
 
-    try {
-        // Create a transaction
-        const result = await gateway.transaction.sale(saleRequest);
-        console.log(result);
-        if (result.success) {
-            console.log("Success! Transaction ID: " + result.transaction.id);
-            res.json({ isPaymentSuccessful: true });
-        } else {
-            console.log("Error: " + result.message);
-            res.status(400).json({ isPaymentSuccessful: false, errorText: result.message });
+    gateway.transaction.sale({
+        amount: amount,
+        paymentMethodNonce: nonce,
+        deviceData: deviceData,
+        options: {
+            submitForSettlement: true
         }
-    } catch (error) {
-        console.log("Error in creating transaction ", error);
-        res.status(400).json({ isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error });
-    }
+    }, (err, result) => {
+        if (err || !result.success) {
+            res.status(500).json({ isPaymentSuccessful: false, error: err || result.message });
+        } else {
+            res.json({ isPaymentSuccessful: true });
+        }
+    });
 });
+
 
 
 
@@ -156,6 +148,16 @@ app.get('/client_token_gpay', async (req, res) => {
     } catch (err) {
         res.status(500).send(err);
     }
+});
+
+app.get('/client_token_aPay', (req, res) => {
+    gateway.clientToken.generate({}, (err, response) => {
+        if (err) {
+            res.status(500).send(err);
+        } else {
+            res.send(response.clientToken);
+        }
+    });
 });
 
 

@@ -28,12 +28,17 @@
     <script>
         const amount = '100'; // Define the amount here or pass it dynamically as needed
 
-        // Fetch the client token from your server
-        fetch('/client_token')
-            .then(response => response.text())
+        console.log('Fetching client token...');
+        fetch('/client_token_aPay')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
             .then(clientToken => {
-                // Initialize Braintree Drop-in UI
-                braintree.dropin.create({
+                console.log('Client token fetched:', clientToken);
+                return braintree.dropin.create({
                     authorization: clientToken,
                     container: '#dropin-container',
                     card: false,
@@ -49,46 +54,56 @@
                             requiredBillingContactFields: ['postalAddress', 'email']
                         }
                     }
-                }, (createErr, instance) => {
-                    if (createErr) {
-                        console.error('Drop-in create error:', createErr);
-                        return;
-                    }
+                });
+            })
+            .then(instance => {
+                console.log('Drop-in UI created:', instance);
 
-                    // Handle form submission
-                    document.getElementById('submit-button').addEventListener('click', () => {
-                        instance.requestPaymentMethod((err, payload) => {
-                            if (err) {
-                                console.error('Payment method request error:', err);
-                                return;
-                            }
+                document.getElementById('submit-button').addEventListener('click', () => {
+                    console.log('Submit button clicked');
+                    instance.requestPaymentMethod((err, payload) => {
+                        if (err) {
+                            console.error('Payment method request error:', err);
+                            return;
+                        }
 
-                            // Process the payment on your server
-                            fetch('/createPaymentTransactionByApplePay', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    amount: amount,
-                                    nonce: payload.nonce,
-                                    deviceData: payload.details
-                                })
-                            }).then(response => response.json())
-                                .then(data => {
-                                    if (data.isPaymentSuccessful) {
-                                        console.log('Payment successful:', data);
-                                        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
-                                    } else {
-                                        console.error('Payment failed:', data);
-                                    }
-                                }).catch(transactionError => {
-                                    console.error('Transaction error:', transactionError);
-                                });
-                        });
+                        console.log('Payment method payload:', payload);
+
+                        fetch('/createPaymentTransactionByApplePay', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                amount: amount,
+                                nonce: payload.nonce,
+                                deviceData: payload.details
+                            })
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                console.log('Transaction response:', data);
+                                if (data.isPaymentSuccessful) {
+                                    console.log('Payment successful:', data);
+                                    window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+                                } else {
+                                    console.error('Payment failed:', data);
+                                }
+                            })
+                            .catch(transactionError => {
+                                console.error('Transaction error:', transactionError);
+                            });
                     });
                 });
-            }).catch(err => console.error('Client token fetch error:', err));
+            })
+            .catch(err => {
+                console.error('Error in setup:', err);
+            });
     </script>
 </body>
 
