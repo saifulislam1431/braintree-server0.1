@@ -22,7 +22,7 @@
     <script>
         const amount = '100'; // Define the amount here or pass it dynamically as needed
 
-        fetch('/client_token')
+        fetch('/client_token', { timeout: 10000 }) // Set a timeout for the request
             .then(response => response.text())
             .then(clientToken => {
                 return braintree.client.create({
@@ -54,11 +54,11 @@
                     session.onvalidatemerchant = (event) => {
                         applePayInstance.performValidation({
                             validationURL: event.validationURL,
-                            displayName: 'Your Merchant Name'
+                            displayName: 'JurnyOn'
                         }).then((merchantSession) => {
                             session.completeMerchantValidation(merchantSession);
                         }).catch((validationError) => {
-                            console.error(validationError);
+                            console.error('Validation Error:', validationError);
                             session.abort();
                         });
                     };
@@ -86,11 +86,11 @@
                                         session.completePayment(ApplePaySession.STATUS_FAILURE);
                                     }
                                 }).catch((transactionError) => {
-                                    console.error(transactionError);
+                                    console.error('Transaction Error:', transactionError);
                                     session.completePayment(ApplePaySession.STATUS_FAILURE);
                                 });
                         }).catch((tokenizationError) => {
-                            console.error(tokenizationError);
+                            console.error('Tokenization Error:', tokenizationError);
                             session.completePayment(ApplePaySession.STATUS_FAILURE);
                         });
                     };
