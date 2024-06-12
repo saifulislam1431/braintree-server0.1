@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 
 <head>
@@ -86,6 +86,74 @@
                     deviceData: paymentMethodData.tokenizationData.deviceData // Add device data if needed
                 }));
             }
+        });
+    </script>
+</body>
+
+</html> -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://js.braintreegateway.com/web/dropin/1.42.0/js/dropin.min.js"></script>
+    <script src="https://pay.google.com/gp/p/js/pay.js" async defer></script>
+</head>
+
+<body style="display: flex; flex-direction: column;">
+    <div id="dropin-container"></div>
+    <button id="submit-button" class="paymentButton" style="display: none;"></button>
+    <script>
+        var button = document.querySelector('#submit-button');
+        var clientToken = new URLSearchParams(window.location.search).get('client_token');
+        var amount = new URLSearchParams(window.location.search).get('amount');
+
+        braintree.dropin.create({
+            authorization: clientToken,
+            container: '#dropin-container',
+            card: false,
+            googlePay: {
+                googlePayVersion: 1,
+                merchantId: 'your-merchant-id', // Replace with your actual Google Pay merchant ID
+                transactionInfo: {
+                    totalPriceStatus: 'FINAL',
+                    totalPrice: amount,
+                    currencyCode: 'USD'
+                },
+                allowedPaymentMethods: [{
+                    type: 'CARD',
+                    parameters: {
+                        billingAddressRequired: true,
+                        billingAddressParameters: {
+                            format: 'FULL'
+                        }
+                    }
+                }]
+            },
+
+        }, function (createErr, instance) {
+            if (createErr) {
+                console.error('Create Error:', createErr);
+                return;
+            }
+            button.addEventListener('click', function () {
+                button.textContent = "Processing Payment";
+                instance.requestPaymentMethod(function (requestPaymentMethodErr, payload) {
+                    if (requestPaymentMethodErr) {
+                        console.error('Request Payment Method Error:', requestPaymentMethodErr);
+                        return;
+                    }
+                    // Collect device data
+                    const deviceData = instance.deviceData;
+
+                    // Send payload and device data to React Native to send to the server
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        nonce: payload.nonce,
+                        deviceData: deviceData
+                    }));
+                });
+            });
         });
     </script>
 </body>
