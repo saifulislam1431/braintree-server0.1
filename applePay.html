@@ -43,12 +43,16 @@
                     container: '#dropin-container',
                     card: false,
                     applePay: {
-                        displayName: 'merchant.com.jurnyOn.railApp',
+                        displayName: 'My Store',
                         paymentRequest: {
                             total: {
-                                label: 'JurnyOn',
-                                amount: amount,
+                                label: 'My Store',
+                                amount: amount
                             },
+                            // We recommend collecting billing address information, at minimum
+                            // billing postal code, and passing that billing postal code with all
+                            // Apple Pay transactions as a best practice.
+                            requiredBillingContactFields: ["postalAddress"]
                         }
                     }
                 });
