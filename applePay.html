@@ -4,69 +4,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braintree Apple Pay Integration</title>
+    <title>Braintree Drop-in UI with Apple Pay</title>
     <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
     <script src="https://js.braintreegateway.com/web/3.102.0/js/apple-pay.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/dropin/1.33.6/js/dropin.min.js"></script>
     <style>
-        #apple-pay-button {
+        #dropin-container {
             width: 100%;
             max-width: 95%;
-            height: 70px;
             margin-top: 20px;
+        }
+
+        #submit-button {
+            margin-top: 20px;
+            height: 50px;
         }
     </style>
 </head>
 
 <body>
-    <div id="apple-pay-button"></div>
+    <div id="dropin-container"></div>
+    <button id="submit-button">Pay</button>
     <script>
         const amount = '100'; // Define the amount here or pass it dynamically as needed
 
-        fetch('/client_token', { timeout: 10000 }) // Set a timeout for the request
+        // Fetch the client token from your server
+        fetch('/client_token')
             .then(response => response.text())
             .then(clientToken => {
-                return braintree.client.create({
-                    authorization: clientToken
-                });
-            })
-            .then(clientInstance => {
-                return braintree.applePay.create({
-                    client: clientInstance
-                });
-            })
-            .then(applePayInstance => {
-                const applePayButton = document.createElement('button');
-                applePayButton.id = 'apple-pay-button';
-                applePayButton.innerHTML = 'Pay with Apple Pay';
-                document.getElementById('apple-pay-button').appendChild(applePayButton);
+                // Initialize Braintree Drop-in UI
+                braintree.dropin.create({
+                    authorization: clientToken,
+                    container: '#dropin-container',
+                    applePay: {
+                        displayName: 'Your Merchant Name',
+                        paymentRequest: {
+                            total: {
+                                label: 'Your Label',
+                                amount: amount
+                            },
+                            currencyCode: 'USD',
+                            countryCode: 'US',
+                            requiredBillingContactFields: ["postalAddress"]
+                        }
+                    }
+                }, (createErr, instance) => {
+                    if (createErr) {
+                        console.error('Drop-in create error:', createErr);
+                        return;
+                    }
 
-                applePayButton.addEventListener('click', () => {
-                    const paymentRequest = applePayInstance.createPaymentRequest({
-                        total: {
-                            label: 'Your Label',
-                            amount: amount
-                        },
-                        requiredBillingContactFields: ["postalAddress"]
-                    });
+                    // Handle form submission
+                    document.getElementById('submit-button').addEventListener('click', () => {
+                        instance.requestPaymentMethod((err, payload) => {
+                            if (err) {
+                                console.error('Payment method request error:', err);
+                                return;
+                            }
 
-                    const session = new ApplePaySession(1, paymentRequest);
-
-                    session.onvalidatemerchant = (event) => {
-                        applePayInstance.performValidation({
-                            validationURL: event.validationURL,
-                            displayName: 'JurnyOn'
-                        }).then((merchantSession) => {
-                            session.completeMerchantValidation(merchantSession);
-                        }).catch((validationError) => {
-                            console.error('Validation Error:', validationError);
-                            session.abort();
-                        });
-                    };
-
-                    session.onpaymentauthorized = (event) => {
-                        applePayInstance.tokenize({
-                            token: event.payment.token
-                        }).then((payload) => {
+                            // Process the payment on your server
                             fetch('/createPaymentTransactionByApplePay', {
                                 method: 'POST',
                                 headers: {
@@ -80,24 +76,18 @@
                             }).then(response => response.json())
                                 .then(data => {
                                     if (data.isPaymentSuccessful) {
-                                        session.completePayment(ApplePaySession.STATUS_SUCCESS);
+                                        console.log('Payment successful:', data);
                                         window.ReactNativeWebView.postMessage(JSON.stringify(payload));
                                     } else {
-                                        session.completePayment(ApplePaySession.STATUS_FAILURE);
+                                        console.error('Payment failed:', data);
                                     }
-                                }).catch((transactionError) => {
-                                    console.error('Transaction Error:', transactionError);
-                                    session.completePayment(ApplePaySession.STATUS_FAILURE);
+                                }).catch(transactionError => {
+                                    console.error('Transaction error:', transactionError);
                                 });
-                        }).catch((tokenizationError) => {
-                            console.error('Tokenization Error:', tokenizationError);
-                            session.completePayment(ApplePaySession.STATUS_FAILURE);
                         });
-                    };
-
-                    session.begin();
+                    });
                 });
-            }).catch(err => console.error('Braintree error:', err));
+            }).catch(err => console.error('Client token fetch error:', err));
     </script>
 </body>
 
