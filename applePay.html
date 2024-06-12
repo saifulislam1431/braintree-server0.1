@@ -36,16 +36,17 @@
                 braintree.dropin.create({
                     authorization: clientToken,
                     container: '#dropin-container',
+                    card: false,
                     applePay: {
-                        displayName: 'JuryOn',
+                        displayName: 'JurnyOn',
                         paymentRequest: {
                             total: {
-                                label: 'Your Label',
+                                label: 'Your Merchant Name',
                                 amount: amount
                             },
                             currencyCode: 'USD',
                             countryCode: 'US',
-                            requiredBillingContactFields: ["postalAddress"]
+                            requiredBillingContactFields: ['postalAddress', 'email']
                         }
                     }
                 }, (createErr, instance) => {
