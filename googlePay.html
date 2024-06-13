@@ -4,99 +4,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
-    <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
-    <script src="https://js.braintreegateway.com/web/3.102.0/js/google-payment.min.js"></script>
-</head>
-
-<body>
-    <button id="google-pay-button"></button>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const googlePayClient = new google.payments.api.PaymentsClient({ environment: 'TEST' });
-
-            const isReadyToPayRequest = {
-                apiVersion: 1,
-                apiVersionMinor: 0,
-                allowedPaymentMethods: [{
-                    type: 'CARD',
-                    parameters: {
-                        allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-                        allowedCardNetworks: ['MASTERCARD', 'VISA'],
-                    }
-                }]
-            };
-
-            googlePayClient.isReadyToPay(isReadyToPayRequest).then(function (response) {
-                if (response.result) {
-                    const button = googlePayClient.createButton({
-                        onClick: onGooglePayButtonClicked
-                    });
-                    document.getElementById('google-pay-button').appendChild(button);
-                }
-            });
-
-            function onGooglePayButtonClicked() {
-                const amount = new URLSearchParams(window.location.search).get('amount');
-
-                const paymentDataRequest = {
-                    apiVersion: 2,
-                    apiVersionMinor: 0,
-                    allowedPaymentMethods: [{
-                        type: 'CARD',
-                        parameters: {
-                            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-                            allowedCardNetworks: ['MASTERCARD', 'VISA'],
-                        },
-                        tokenizationSpecification: {
-                            type: 'PAYMENT_GATEWAY',
-                            parameters: {
-                                gateway: 'braintree',
-                                'braintree:apiVersion': 'v1',
-                                'braintree:merchantId': 'your-merchant-id',
-                                'braintree:clientKey': 'sandbox_385syfr6_n9xd2ttx7p9zgpzk' // Replace with your Braintree client token
-                            }
-                        }
-                    }],
-                    transactionInfo: {
-                        totalPriceStatus: 'FINAL',
-                        totalPrice: amount,  // Replace with the actual amount
-                        currencyCode: 'USD'
-                    },
-                    merchantInfo: {
-                        merchantId: 'your-merchant-id',  // Replace with your Google Pay merchant ID
-                        merchantName: 'JurnyOn'
-                    }
-                };
-
-                googlePayClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
-                    processPayment(paymentData);
-                }).catch(function (err) {
-                    console.error(err);
-                });
-            }
-
-            function processPayment(paymentData) {
-                const paymentMethodData = paymentData.paymentMethodData;
-                const token = paymentMethodData.tokenizationData.token;
-
-                // Post message to React Native app
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                    nonce: token,
-                    deviceData: paymentMethodData.tokenizationData.deviceData // Add device data if needed
-                }));
-            }
-        });
-    </script>
-</body>
-
-</html> -->
-<!DOCTYPE html>
-<html>
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://js.braintreegateway.com/web/dropin/1.42.0/js/dropin.min.js"></script>
     <script src="https://pay.google.com/gp/p/js/pay.js" async defer></script>
 </head>
@@ -154,6 +61,112 @@
                     }));
                 });
             });
+        });
+    </script>
+</body>
+
+</html> -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://pay.google.com/gp/p/js/pay.js" async defer></script>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/google-payment.min.js"></script>
+</head>
+
+<body>
+    <button id="google-pay-button"></button>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const googlePayClient = new google.payments.api.PaymentsClient({ environment: 'TEST' });
+
+            const isReadyToPayRequest = {
+                apiVersion: 2,
+                apiVersionMinor: 0,
+                allowedPaymentMethods: [{
+                    type: 'CARD',
+                    parameters: {
+                        allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+                        allowedCardNetworks: ['MASTERCARD', 'VISA'],
+                        billingAddressRequired: true,
+                        billingAddressParameters: {
+                            format: 'FULL',
+                            phoneNumberRequired: true
+                        }
+                    }
+                }]
+            };
+
+            googlePayClient.isReadyToPay(isReadyToPayRequest).then(function (response) {
+                if (response.result) {
+                    const button = googlePayClient.createButton({
+                        onClick: onGooglePayButtonClicked
+                    });
+                    document.getElementById('google-pay-button').appendChild(button);
+                }
+            }).catch(function (err) {
+                console.error(err);
+            });
+
+            function onGooglePayButtonClicked() {
+                const amount = new URLSearchParams(window.location.search).get('amount');
+
+                const paymentDataRequest = {
+                    apiVersion: 2,
+                    apiVersionMinor: 0,
+                    allowedPaymentMethods: [{
+                        type: 'CARD',
+                        parameters: {
+                            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+                            allowedCardNetworks: ['MASTERCARD', 'VISA'],
+                            billingAddressRequired: true,
+                            billingAddressParameters: {
+                                format: 'FULL',
+                                phoneNumberRequired: true
+                            }
+                        },
+                        tokenizationSpecification: {
+                            type: 'PAYMENT_GATEWAY',
+                            parameters: {
+                                gateway: 'braintree',
+                                'braintree:apiVersion': 'v1',
+                                'braintree:merchantId': 'n9xd2ttx7p9zgpzk',
+                                'braintree:clientKey': 'sandbox_385syfr6_n9xd2ttx7p9zgpzk' // Replace with your Braintree client token
+                            }
+                        }
+                    }],
+                    transactionInfo: {
+                        totalPriceStatus: 'FINAL',
+                        totalPrice: amount,
+                        currencyCode: 'USD'
+                    },
+                    merchantInfo: {
+                        merchantId: '378317447873447996',  // Replace with your Google Pay merchant ID
+                        merchantName: 'JurnyOn'
+                    }
+                };
+
+                googlePayClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
+                    processPayment(paymentData);
+                }).catch(function (err) {
+                    console.error(err);
+                });
+            }
+
+            function processPayment(paymentData) {
+                const paymentMethodData = paymentData.paymentMethodData;
+                const token = paymentMethodData.tokenizationData.token;
+
+                // Post message to React Native app
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    nonce: token,
+                    deviceData: paymentMethodData.tokenizationData.deviceData // Add device data if needed
+                }));
+            }
         });
     </script>
 </body>
