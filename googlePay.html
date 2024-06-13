@@ -102,19 +102,22 @@
             };
 
             googlePayClient.isReadyToPay(isReadyToPayRequest).then(function (response) {
+                console.log('isReadyToPay response:', response);
                 if (response.result) {
                     const button = googlePayClient.createButton({
                         onClick: onGooglePayButtonClicked
                     });
                     document.getElementById('google-pay-button').appendChild(button);
+                } else {
+                    console.error('Google Pay is not available.');
                 }
             }).catch(function (err) {
-                console.error(err);
+                console.error('isReadyToPay error:', err);
             });
 
             function onGooglePayButtonClicked() {
                 const amount = new URLSearchParams(window.location.search).get('amount');
-                const clientToken = new URLSearchParams(window.location.search).get('client_token');
+                var clientToken = new URLSearchParams(window.location.search).get('client_token');
 
                 const paymentDataRequest = {
                     apiVersion: 2,
@@ -136,7 +139,7 @@
                                 gateway: 'braintree',
                                 'braintree:apiVersion': 'v1',
                                 'braintree:merchantId': 'n9xd2ttx7p9zgpzk',
-                                'braintree:clientKey': clientToken // Replace with your Braintree client token
+                                'braintree:clientKey': `${clientToken}` // Replace with your Braintree client token
                             }
                         }
                     }],
@@ -146,7 +149,7 @@
                         currencyCode: 'USD'
                     },
                     merchantInfo: {
-                        merchantId: '378317447873447996',  // Replace with your Google Pay merchant ID
+                        merchantId: '378317447873447996',
                         merchantName: 'JurnyOn'
                     }
                 };
@@ -154,7 +157,7 @@
                 googlePayClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
                     processPayment(paymentData);
                 }).catch(function (err) {
-                    console.error(err);
+                    console.error('loadPaymentData error:', err);
                 });
             }
 
