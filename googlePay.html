@@ -114,6 +114,7 @@
 
             function onGooglePayButtonClicked() {
                 const amount = new URLSearchParams(window.location.search).get('amount');
+                const clientToken = new URLSearchParams(window.location.search).get('client_token');
 
                 const paymentDataRequest = {
                     apiVersion: 2,
@@ -135,7 +136,7 @@
                                 gateway: 'braintree',
                                 'braintree:apiVersion': 'v1',
                                 'braintree:merchantId': 'n9xd2ttx7p9zgpzk',
-                                'braintree:clientKey': 'sandbox_385syfr6_n9xd2ttx7p9zgpzk' // Replace with your Braintree client token
+                                'braintree:clientKey': clientToken // Replace with your Braintree client token
                             }
                         }
                     }],
