@@ -57,6 +57,25 @@
                     requiredBillingContactFields: ['postalAddress', 'email']
                 }
             },
+            googlePay: {
+                googlePayVersion: 2,
+                merchantId: '378317447873447996',
+                transactionInfo: {
+                    totalPriceStatus: 'FINAL',
+                    totalPrice: '123.45',
+                    currencyCode: 'USD'
+                },
+                allowedPaymentMethods: [{
+                    type: 'CARD',
+                    parameters: {
+                        // We recommend collecting and passing billing address information with all Google Pay transactions as a best practice.
+                        billingAddressRequired: true,
+                        billingAddressParameters: {
+                            format: 'FULL'
+                        }
+                    }
+                }]
+            }
 
         }, function (createErr, instance) {
             if (createErr) {
