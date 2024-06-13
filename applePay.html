@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -105,6 +105,89 @@
             .catch(err => {
                 console.error('Error in setup:', err);
             });
+    </script>
+</body>
+
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Apple Pay with Braintree</title>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/client.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/3.102.0/js/apple-pay.min.js"></script>
+</head>
+
+<body>
+    <div id="payment-button"></div>
+
+    <script>
+        var tokenParam = new URLSearchParams(window.location.search).get('client_token');
+        var amount = new URLSearchParams(window.location.search).get('amount');
+
+        var button = document.createElement('button');
+        button.innerText = 'Pay with Apple Pay';
+        button.onclick = function () { startApplePay(); };
+        document.getElementById('payment-button').appendChild(button);
+
+        function startApplePay() {
+            var clientToken = tokenParam;
+            braintree.client.create({
+                authorization: clientToken
+            }, function (clientErr, clientInstance) {
+                if (clientErr) {
+                    console.error(clientErr);
+                    return;
+                }
+                braintree.applePay.create({
+                    client: clientInstance
+                }, function (applePayErr, applePayInstance) {
+                    if (applePayErr) {
+                        console.error(applePayErr);
+                        return;
+                    }
+                    // Set up your Apple Pay session and request authorization
+                    var paymentRequest = applePayInstance.createPaymentRequest({
+                        total: { label: 'Your Company', amount: amount },
+                        countryCode: 'US',
+                        currencyCode: 'USD',
+                        supportedNetworks: ['visa', 'masterCard', 'amex'],
+                        merchantCapabilities: ['supports3DS']
+                    });
+
+                    var session = new ApplePaySession(3, paymentRequest);
+                    session.begin();
+
+                    session.onpaymentauthorized = function (event) {
+                        applePayInstance.tokenize({ token: event.payment.token }).then(function (payload) {
+                            fetch('/createPaymentTransactionByApplePay', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    nonce: payload.nonce,
+                                    deviceData: payload.deviceData,
+                                    amount: '10.00'
+                                })
+                            }).then(function (response) {
+                                return response.json();
+                            }).then(function (data) {
+                                if (data.isPaymentSuccessful) {
+                                    session.completePayment(ApplePaySession.STATUS_SUCCESS);
+                                } else {
+                                    session.completePayment(ApplePaySession.STATUS_FAILURE);
+                                }
+                            });
+                        }).catch(function (error) {
+                            session.completePayment(ApplePaySession.STATUS_FAILURE);
+                        });
+                    };
+                });
+            });
+        }
     </script>
 </body>
 
