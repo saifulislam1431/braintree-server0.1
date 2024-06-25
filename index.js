@@ -20,32 +20,90 @@ const gateway = new braintree.BraintreeGateway({
 });
 
 app.post('/createPaymentTransaction', async (req, res) => {
-    const { body } = req;
-    // console.log(body);
+    const { amount, nonce, deviceData } = req.body;
+
+    if (!amount || !nonce) {
+        return res.status(400).json({
+            isPaymentSuccessful: false,
+            errorText: "Missing required payment parameters."
+        });
+    }
+
+    const saleRequest = {
+        amount: amount,
+        paymentMethodNonce: nonce,
+        deviceData: deviceData,
+        options: {
+            submitForSettlement: true
+        }
+    };
 
     try {
-        //create a transaction
-        const result = await gateway.transaction.sale({
-            amount: body.amount,
-            paymentMethodNonce: body.nonce,
-            deviceData: body.deviceData, // Include device data
-            options: {
-                submitForSettlement: true
-            }
-        });
-        console.log(result);
-
-        res.status(200).json({
-            isPaymentSuccessful: result.success,
-            successText: result.transaction?.processorResponseText || "",
-        });
-
+        const result = await gateway.transaction.sale(saleRequest);
+        if (result.success) {
+            res.status(200).json({
+                isPaymentSuccessful: true,
+                transactionId: result.transaction.id,
+                successText: result.transaction.processorResponseText || "Transaction successful."
+            });
+        } else {
+            res.status(500).json({
+                isPaymentSuccessful: false,
+                errorText: result.message || "Failed to process transaction."
+            });
+        }
     } catch (error) {
-        console.log("Error in creating transaction ", error);
+        console.error("Error in creating transaction: ", error);
+        res.status(500).json({
+            isPaymentSuccessful: false,
+            errorText: "Error in creating the payment transaction: " + error.message
+        });
+    }
+});
+
+app.post('/createPaymentTransactionByGooglePay', async (req, res) => {
+    const saleRequest = {
+        amount: req.body.amount,
+        paymentMethodNonce: req.body.nonce,
+        deviceData: req.body.deviceData,
+        orderId: "01",
+        options: {
+            submitForSettlement: true,
+        }
+    };
+
+    try {
+        const result = await gateway.transaction.sale(saleRequest);
+        if (result.success) {
+            // res.json({ isPaymentSuccessful: true, transactionId: result.transaction.id });
+            res.send(result);
+        } else {
+            res.json({ isPaymentSuccessful: false, errorText: result.message });
+        }
+    } catch (error) {
         res.status(400).json({
             isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error
         });
     }
+});
+
+app.post('/createPaymentTransactionByApplePay', (req, res) => {
+    const { amount, nonce, deviceData } = req.body;
+
+    gateway.transaction.sale({
+        amount: amount,
+        paymentMethodNonce: nonce,
+        deviceData: deviceData,
+        options: {
+            submitForSettlement: true
+        }
+    }, (err, result) => {
+        if (err || !result.success) {
+            res.status(500).json({ isPaymentSuccessful: false, error: err || result.message });
+        } else {
+            res.send(result);
+        }
+    });
 });
 
 app.post('/createPaymentTransactionByPaypal', async (req, res) => {
@@ -83,50 +141,6 @@ app.post('/createPaymentTransactionByPaypal', async (req, res) => {
             isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error
         });
     }
-});
-
-app.post('/createPaymentTransactionByGooglePay', async (req, res) => {
-    const saleRequest = {
-        amount: req.body.amount,
-        paymentMethodNonce: req.body.nonce,
-        deviceData: req.body.deviceData,
-        orderId: "01",
-        options: {
-            submitForSettlement: true,
-        }
-    };
-
-    try {
-        const result = await gateway.transaction.sale(saleRequest);
-        if (result.success) {
-            res.json({ isPaymentSuccessful: true, transactionId: result.transaction.id });
-        } else {
-            res.json({ isPaymentSuccessful: false, errorText: result.message });
-        }
-    } catch (error) {
-        res.status(400).json({
-            isPaymentSuccessful: false, errorText: "Error in creating the payment transaction: " + error
-        });
-    }
-});
-
-app.post('/createPaymentTransactionByApplePay', express.json(), (req, res) => {
-    const { amount, nonce, deviceData } = req.body;
-
-    gateway.transaction.sale({
-        amount: amount,
-        paymentMethodNonce: nonce,
-        deviceData: deviceData,
-        options: {
-            submitForSettlement: true
-        }
-    }, (err, result) => {
-        if (err || !result.success) {
-            res.status(500).json({ isPaymentSuccessful: false, error: err || result.message });
-        } else {
-            res.json({ isPaymentSuccessful: true });
-        }
-    });
 });
 
 
